@@ -171,6 +171,46 @@ func (v *vrf) Verify(pk *ecdsa.PublicKey, alpha, pi []byte) (beta []byte, err er
 	return
 }
 
+// GetVerifyComponents checks the correctness of proof following [draft-irtf-cfrg-vrf-06 section 5.3](https://tools.ietf.org/id/draft-irtf-cfrg-vrf-06.html#rfc.section.5.3).
+func (v *vrf) GetVerifyComponents(pk *ecdsa.PublicKey, alpha, pi []byte) (U, sH, cG *Point, err error) {
+	core := Core{Config: &v.cfg}
+	// step 1: D = ECVRF_decode_proof(pi_string)
+	gamma, c, s, err := core.DecodeProof(pi)
+
+	// step 2: If D is "INVALID", output "INVALID" and stop
+	if err != nil {
+		return
+	}
+	// step 3: (Gamma, c, s) = D
+
+	// step 4: H = ECVRF_hash_to_curve(suite_string, Y, alpha_string)
+	H, err := core.HashToCurveTryAndIncrement(&Point{pk.X, pk.Y}, alpha)
+	if err != nil {
+		return
+	}
+
+	// step 5: U = s*B - c*Y
+	sB := core.ScalarBaseMult(s.Bytes())
+	cY := core.ScalarMult(&Point{pk.X, pk.Y}, c.Bytes())
+	U = core.Sub(sB, cY)
+
+	// step 6: V = s*H - c*Gamma
+	sH = core.ScalarMult(H, s.Bytes())
+	cG = core.ScalarMult(gamma, c.Bytes())
+	V := core.Sub(sH, cG)
+
+	// step 7: c' = ECVRF_hash_points(H, Gamma, U, V)
+	derivedC := core.HashPoints(H, gamma, U, V)
+
+	// step 8: If c and c' are equal, output ("VALID", ECVRF_proof_to_hash(pi_string)); else output "INVALID"
+	if derivedC.Cmp(c) != 0 {
+		err = errors.New("invalid proof")
+		return
+	}
+	
+	return
+}
+
 func (v *vrf) Core() Core {
 	return Core{Config: &v.cfg}
 }
