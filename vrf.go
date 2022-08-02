@@ -49,7 +49,7 @@ var (
 			}
 
 			// Attempt to calculate the y coordinate for the given x coordinate such
-			// that the result pair is a point on the secp256k1 curve and the
+			// that the result pair is a Point on the secp256k1 curve and the
 			// solution with desired oddness is chosen.
 			wantOddY := format == secp256k1.PubKeyFormatCompressedOdd
 			if !secp256k1.DecompressY(&fx, wantOddY, &fy) {
@@ -81,7 +81,7 @@ type vrf struct {
 // Prove constructs VRF proof following [draft-irtf-cfrg-vrf-06 section 5.1](https://tools.ietf.org/id/draft-irtf-cfrg-vrf-06.html#rfc.section.5.1).
 func (v *vrf) Prove(sk *ecdsa.PrivateKey, alpha []byte) (beta, pi []byte, err error) {
 	var (
-		core = core{Config: &v.cfg}
+		core = Core{Config: &v.cfg}
 		q    = core.Q()
 	)
 
@@ -89,7 +89,7 @@ func (v *vrf) Prove(sk *ecdsa.PrivateKey, alpha []byte) (beta, pi []byte, err er
 
 	// step 2: H = ECVRF_hash_to_curve(suite_string, Y, alpha_string)
 	// currently, try_and_increment algorithm is supported
-	H, err := core.HashToCurveTryAndIncrement(&point{sk.X, sk.Y}, alpha)
+	H, err := core.HashToCurveTryAndIncrement(&Point{sk.X, sk.Y}, alpha)
 	if err != nil {
 		return
 	}
@@ -130,7 +130,7 @@ func (v *vrf) Prove(sk *ecdsa.PrivateKey, alpha []byte) (beta, pi []byte, err er
 
 // Verify checks the correctness of proof following [draft-irtf-cfrg-vrf-06 section 5.3](https://tools.ietf.org/id/draft-irtf-cfrg-vrf-06.html#rfc.section.5.3).
 func (v *vrf) Verify(pk *ecdsa.PublicKey, alpha, pi []byte) (beta []byte, err error) {
-	core := core{Config: &v.cfg}
+	core := Core{Config: &v.cfg}
 	// step 1: D = ECVRF_decode_proof(pi_string)
 	gamma, c, s, err := core.DecodeProof(pi)
 
@@ -141,14 +141,14 @@ func (v *vrf) Verify(pk *ecdsa.PublicKey, alpha, pi []byte) (beta []byte, err er
 	// step 3: (Gamma, c, s) = D
 
 	// step 4: H = ECVRF_hash_to_curve(suite_string, Y, alpha_string)
-	H, err := core.HashToCurveTryAndIncrement(&point{pk.X, pk.Y}, alpha)
+	H, err := core.HashToCurveTryAndIncrement(&Point{pk.X, pk.Y}, alpha)
 	if err != nil {
 		return
 	}
 
 	// step 5: U = s*B - c*Y
 	sB := core.ScalarBaseMult(s.Bytes())
-	cY := core.ScalarMult(&point{pk.X, pk.Y}, c.Bytes())
+	cY := core.ScalarMult(&Point{pk.X, pk.Y}, c.Bytes())
 	U := core.Sub(sB, cY)
 
 	// step 6: V = s*H - c*Gamma
@@ -169,6 +169,6 @@ func (v *vrf) Verify(pk *ecdsa.PublicKey, alpha, pi []byte) (beta []byte, err er
 	return
 }
 
-func (v *vrf) Core() core {
-	return core{Config: &v.cfg}
+func (v *vrf) Core() Core {
+	return Core{Config: &v.cfg}
 }
