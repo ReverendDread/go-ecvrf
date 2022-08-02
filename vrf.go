@@ -23,6 +23,8 @@ type VRF interface {
 	// Verify checks the proof `pi` of the message `alpha` against the given
 	// public key `pk`. The hash output is returned as `beta`.
 	Verify(pk *ecdsa.PublicKey, alpha, pi []byte) (beta []byte, err error)
+
+	Core() Core
 }
 
 var (
