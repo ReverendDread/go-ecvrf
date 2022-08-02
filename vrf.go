@@ -168,3 +168,7 @@ func (v *vrf) Verify(pk *ecdsa.PublicKey, alpha, pi []byte) (beta []byte, err er
 	beta = core.GammaToHash(gamma)
 	return
 }
+
+func (v *vrf) Core() core {
+	return core{Config: &v.cfg}
+}
