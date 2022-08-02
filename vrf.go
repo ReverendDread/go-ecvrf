@@ -24,6 +24,8 @@ type VRF interface {
 	// public key `pk`. The hash output is returned as `beta`.
 	Verify(pk *ecdsa.PublicKey, alpha, pi []byte) (beta []byte, err error)
 
+	GetVerifyComponents(pk *ecdsa.PublicKey, alpha, pi []byte) (U, sH, cG *Point, err error)
+
 	Core() Core
 }
 
@@ -207,7 +209,7 @@ func (v *vrf) GetVerifyComponents(pk *ecdsa.PublicKey, alpha, pi []byte) (U, sH,
 		err = errors.New("invalid proof")
 		return
 	}
-	
+
 	return
 }
 
